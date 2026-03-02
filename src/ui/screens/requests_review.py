@@ -13,6 +13,15 @@ from src.ui.screens.base import LightScreen
 from src.ui.screens.modal_window.modal_with_ok import show_modal
 
 
+STATUS_RU = {
+    RequestStatus.NEW: "Новая",
+    RequestStatus.IN_PROGRESS: "В работе",
+    RequestStatus.DONE: "Выполнена",
+    RequestStatus.CANCELED: "Отменена",
+}
+
+RU_TO_STATUS = {value: key for key, value in STATUS_RU.items()}
+
 class RequestsReviewScreen(LightScreen):
     def __init__(self, **kwargs):
         super().__init__(**kwargs)
@@ -56,7 +65,11 @@ class RequestsReviewScreen(LightScreen):
         self.load_requests()
 
     def go_back(self, *_):
-        self.manager.safe_switch("admin_user_management")
+        if self.manager.current_role == UserRole.ADMIN:
+            self.manager.safe_switch("admin_user_management")
+        else:
+            self.manager.get_screen("admin_dashboard").refresh()
+            self.manager.safe_switch("admin_dashboard")
 
     def load_requests(self):
         if not self.target_user:
@@ -128,7 +141,7 @@ class RequestsReviewScreen(LightScreen):
 
         row.add_widget(
             Label(
-                text=f"[{request.id}] {request.equipment_name} | {request.status.value}",
+                text=f"[{request.id}] {request.equipment_name} | {STATUS_RU.get(request.status, request.status.value)}",
                 size_hint=(1, None),
                 height=30,
                 color=(0, 0, 0, 1),
@@ -157,8 +170,8 @@ class RequestsReviewScreen(LightScreen):
 
         if current_role in (UserRole.MASTER, UserRole.ADMIN):
             status_spinner = Spinner(
-                text=request.status.value,
-                values=[status.value for status in RequestStatus],
+                text=STATUS_RU.get(request.status, request.status.value),
+                values=list(RU_TO_STATUS.keys()),
                 size_hint=(None, 1),
                 width=180,
             )
@@ -189,9 +202,14 @@ class RequestsReviewScreen(LightScreen):
         row.add_widget(controls)
         return row
 
-    def update_status(self, request, new_status: str):
+    def update_status(self, request, new_status_ru: str):
+        status = RU_TO_STATUS.get(new_status_ru)
+        if not status:
+            show_modal("Неизвестный статус")
+            return
+
         self.run_async(
-            self._update_status_async(request.id, RequestStatus(new_status)),
+            self._update_status_async(request.id, status),
             self._after_action,
             self._error,
         )
