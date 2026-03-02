@@ -186,7 +186,7 @@ class AdminDashboardScreen(LightScreen):
     # ================= USERS =================
 
     def open_user_management(self, *_):
-        print("Тут будет отдельный экран управления пользователями")
+        self.manager.safe_switch("admin_user_management")
 
     # ================= LOGOUT =================
 

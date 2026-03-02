@@ -69,18 +69,30 @@ class UserRepository:
         return await self.session.get(Users, user_id)
 
     async def get_by_login(self, login: str) -> Optional[Users]:
-        stmt = select(Users).where(Users.login == login)
+        stmt = select(Users).where(
+            Users.login == login,
+            Users.is_deleted.is_(False)
+        )
         result = await self.session.execute(stmt)
         return result.scalar_one_or_none()
 
-    async def get_all(self) -> List[Users]:
+    async def get_all(self, include_deleted: bool = False) -> List[Users]:
         stmt = select(Users)
+
+        if not include_deleted:
+            stmt = stmt.where(Users.is_deleted.is_(False))
+
         result = await self.session.execute(stmt)
         return result.scalars().all()
 
     async def update(self, user: Users, **kwargs) -> Users:
+        password = kwargs.pop("password", None)
+
         for key, value in kwargs.items():
             setattr(user, key, value)
+
+        if password:
+            user.hash_password = self._hash_password(password)
 
         await self.session.commit()
         await self.session.refresh(user)
@@ -90,3 +102,15 @@ class UserRepository:
     async def delete(self, user: Users) -> None:
         await self.session.delete(user)
         await self.session.commit()
+
+    async def soft_delete(self, user: Users) -> Users:
+        user.full_name = f"[DELETED] {user.full_name}"
+        user.login = f"deleted_{user.id}_{user.login}"
+        user.hash_password = self._hash_password(os.urandom(12).hex())
+        user.department = None
+        user.is_deleted = True
+
+        await self.session.commit()
+        await self.session.refresh(user)
+
+        return user

@@ -7,6 +7,7 @@ from sqlalchemy import (
     ForeignKey,
     DateTime,
     Enum as SqlEnum,
+    Boolean,
 )
 from sqlalchemy.orm import (
     Mapped,
@@ -44,6 +45,7 @@ class Users(Base):
     )
 
     department: Mapped[str | None] = mapped_column(String(255), nullable=True)
+    is_deleted: Mapped[bool] = mapped_column(Boolean, nullable=False, default=False)
 
     # Relationships
     created_requests: Mapped[list["RepairRequests"]] = relationship(

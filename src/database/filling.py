@@ -1,6 +1,6 @@
 import logging
 
-from sqlalchemy import select
+from sqlalchemy import select, text
 from sqlalchemy.ext.asyncio import create_async_engine
 
 from src.service.config.core import get_config
@@ -13,6 +13,7 @@ from src.repository.users import get_user_repository
 async def filling_db():
     await _create_database()
     await _create_table()
+    await _ensure_soft_delete_column()
 
     await _filling_only_one_admin()
 
@@ -65,3 +66,20 @@ async def _filling_only_one_admin():
                 full_name="admin",
                 role=UserRole.ADMIN,
             ),
+
+
+async def _ensure_soft_delete_column():
+    engine = create_async_engine(get_config().sqlite_url)
+    try:
+        async with engine.begin() as conn:
+            result = await conn.execute(text("PRAGMA table_info(users)"))
+            columns = [row[1] for row in result.fetchall()]
+
+            if "is_deleted" not in columns:
+                logging.info("Adding users.is_deleted column...")
+                await conn.execute(
+                    text("ALTER TABLE users ADD COLUMN is_deleted BOOLEAN NOT NULL DEFAULT 0")
+                )
+                logging.info("users.is_deleted column added")
+    finally:
+        await engine.dispose()
