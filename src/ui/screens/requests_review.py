@@ -67,6 +67,9 @@ class RequestsReviewScreen(LightScreen):
     def go_back(self, *_):
         if self.manager.current_role == UserRole.ADMIN:
             self.manager.safe_switch("admin_user_management")
+        elif self.manager.current_role == UserRole.MASTER:
+            self.manager.get_screen("master_dashboard").refresh()
+            self.manager.safe_switch("master_dashboard")
         else:
             self.manager.get_screen("admin_dashboard").refresh()
             self.manager.safe_switch("admin_dashboard")
