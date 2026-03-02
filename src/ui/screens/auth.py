@@ -131,8 +131,8 @@ class AuthScreen(LightScreen):
             sm.get_screen("admin_dashboard").refresh()
             sm.safe_switch("admin_dashboard")
         elif user.role == UserRole.MASTER:
-            sm.get_screen("requests_review").set_target_user(user)
-            sm.safe_switch("requests_review")
+            sm.get_screen("master_dashboard").refresh()
+            sm.safe_switch("master_dashboard")
 
     def _error_login(self, error, **kwargs):
         show_modal(str(error))
