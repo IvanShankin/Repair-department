@@ -5,6 +5,7 @@ from kivy.uix.textinput import TextInput
 from kivy.uix.boxlayout import BoxLayout
 from kivy.core.window import Window
 
+from src.database.models import Users, UserRole
 from src.service.config.core import get_config
 from src.repository.users import get_user_repository
 from src.ui.screens.base import LightScreen
@@ -121,13 +122,14 @@ class AuthScreen(LightScreen):
 
         return user
 
-    def _after_login(self, user):
+    def _after_login(self, user: Users):
         sm: RootScreenManager = self.manager
         sm.current_user_id = user.id
         sm.current_role = user.role
 
-        sm.get_screen("dashboard").refresh()
-        sm.safe_switch("dashboard")
+        if user.role == UserRole.ADMIN:
+            sm.get_screen("admin_dashboard").refresh()
+            sm.safe_switch("admin_dashboard")
 
     def _error_login(self, error, **kwargs):
         show_modal(str(error))
