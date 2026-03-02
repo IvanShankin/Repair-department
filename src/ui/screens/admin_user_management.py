@@ -9,7 +9,6 @@ from kivy.uix.spinner import Spinner
 from kivy.uix.textinput import TextInput
 
 from src.database.models import UserRole, Users
-from src.repository.repair_requests import get_repair_request_repository
 from src.repository.users import get_user_repository
 from src.ui.screens.base import LightScreen
 from src.ui.screens.modal_window.modal_with_ok import show_modal
@@ -63,11 +62,14 @@ class AdminUserManagementScreen(LightScreen):
         self.user_requests_title = Label(text="Заявки пользователя", size_hint=(1, None), height=25, color=(0, 0, 0, 1))
         right.add_widget(self.user_requests_title)
 
-        self.user_requests_container = GridLayout(cols=1, spacing=5, size_hint_y=None)
-        self.user_requests_container.bind(minimum_height=self.user_requests_container.setter("height"))
-        req_scroll = ScrollView(size_hint=(1, 1))
-        req_scroll.add_widget(self.user_requests_container)
-        right.add_widget(req_scroll)
+        self.view_requests_button = Button(
+            text="Просмотреть все заявки",
+            size_hint=(1, None),
+            height=40,
+            on_press=self.open_requests_review,
+            disabled=True,
+        )
+        right.add_widget(self.view_requests_button)
 
         content.add_widget(left)
         content.add_widget(right)
@@ -111,52 +113,18 @@ class AdminUserManagementScreen(LightScreen):
         self.edit_password.text = ""
         self.edit_department.text = user.department or ""
         self.edit_role.text = user.role.value
-        self.load_selected_user_requests()
+        self.user_requests_title.text = "Просмотр заявок выбранного пользователя"
+        self.view_requests_button.disabled = False
 
-    def load_selected_user_requests(self):
+    def open_requests_review(self, *_):
         if not self.selected_user:
+            show_modal("Сначала выберите пользователя")
             return
 
-        self.run_async(
-            self._load_selected_user_requests_async(self.selected_user),
-            self._set_selected_user_requests,
-            self._error,
-        )
+        review_screen = self.manager.get_screen("requests_review")
+        review_screen.set_target_user(self.selected_user)
+        self.manager.safe_switch("requests_review")
 
-    async def _load_selected_user_requests_async(self, user: Users):
-        repo = await get_repair_request_repository()
-        if user.role == UserRole.WORKER:
-            return user.role, await repo.get_by_creator(user.id)
-        if user.role == UserRole.MASTER:
-            return user.role, await repo.get_by_master(user.id)
-        return user.role, []
-
-    def _set_selected_user_requests(self, payload):
-        role, requests = payload
-        self.user_requests_container.clear_widgets()
-
-        if role == UserRole.WORKER:
-            self.user_requests_title.text = "Заявки созданные рабочим"
-        elif role == UserRole.MASTER:
-            self.user_requests_title.text = "Заявки, взятые мастером"
-        else:
-            self.user_requests_title.text = "Для ADMIN список заявок не предусмотрен"
-
-        if not requests:
-            self.user_requests_container.add_widget(
-                Label(text="Нет данных", size_hint=(1, None), height=30, color=(0, 0, 0, 1))
-            )
-            return
-
-        for r in requests:
-            self.user_requests_container.add_widget(
-                Label(
-                    text=f"[{r.id}] {r.equipment_name} | {r.status.value}",
-                    size_hint=(1, None),
-                    height=30,
-                    color=(0, 0, 0, 1),
-                )
-            )
 
     def add_user(self, *_):
         self.run_async(self._add_user_async(), self._after_user_updated, self._error)
@@ -228,8 +196,8 @@ class AdminUserManagementScreen(LightScreen):
         self.edit_password.text = ""
         self.edit_department.text = ""
         self.edit_role.text = UserRole.WORKER.value
-        self.user_requests_container.clear_widgets()
         self.user_requests_title.text = "Заявки пользователя"
+        self.view_requests_button.disabled = True
         self._after_user_updated(_)
 
     def _after_user_updated(self, _):

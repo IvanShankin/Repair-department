@@ -10,6 +10,7 @@ from src.ui.screens.admin_dashboard import AdminDashboardScreen
 from src.ui.screens.admin_user_management import AdminUserManagementScreen
 from src.ui.screens.auth import AuthScreen
 from src.ui.screens.dashboard import DashboardScreen
+from src.ui.screens.requests_review import RequestsReviewScreen
 from src.ui.screens.screen_manager import RootScreenManager
 
 
@@ -38,6 +39,7 @@ class RepairApp(App):
         sm.add_widget(DashboardScreen())
         sm.add_widget(AdminDashboardScreen())
         sm.add_widget(AdminUserManagementScreen())
+        sm.add_widget(RequestsReviewScreen())
 
         sm.current = "auth"
 
