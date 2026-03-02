@@ -19,16 +19,16 @@ from src.database.core import Base
 
 
 class UserRole(str, Enum):
-    WORKER = "WORKER"
-    MASTER = "MASTER"
-    ADMIN = "ADMIN"
+    WORKER = "рабочий"
+    MASTER = "мастер"
+    ADMIN = "админ"
 
 
 class RequestStatus(str, Enum):
-    NEW = "NEW"
-    IN_PROGRESS = "IN_PROGRESS"
-    DONE = "DONE"
-    CANCELED = "CANCELED"
+    NEW = "Новая"
+    IN_PROGRESS = "В процессе"
+    DONE = "Готова"
+    CANCELED = "Отменена"
 
 
 class Users(Base):
