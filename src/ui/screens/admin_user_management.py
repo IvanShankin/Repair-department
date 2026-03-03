@@ -1,5 +1,6 @@
 from typing import List
 
+from kivy.uix.anchorlayout import AnchorLayout
 from kivy.uix.boxlayout import BoxLayout
 from kivy.uix.button import Button
 from kivy.uix.gridlayout import GridLayout
@@ -7,6 +8,7 @@ from kivy.uix.label import Label
 from kivy.uix.scrollview import ScrollView
 from kivy.uix.spinner import Spinner
 from kivy.uix.textinput import TextInput
+from kivy.uix.widget import Widget
 
 from src.database.models import UserRole, Users
 from src.repository.users import get_user_repository
@@ -38,14 +40,32 @@ class AdminUserManagementScreen(LightScreen):
         user_scroll.add_widget(self.users_list_container)
         left.add_widget(user_scroll)
 
-        right = BoxLayout(orientation="vertical", spacing=8, size_hint=(0.55, 1))
+        right_container = BoxLayout(
+            orientation="vertical",
+            size_hint=(0.55, 1)
+        )
+
+        # Верхний spacer
+        right_container.add_widget(Widget(size_hint_y=1))
+
+        # Сам центрируемый блок
+        right = BoxLayout(
+            orientation="vertical",
+            spacing=8,
+            size_hint_y=None
+        )
+
+        right.bind(minimum_height=right.setter("height"))
+
         right.add_widget(Label(text="Данные пользователя", size_hint=(1, None), height=25, color=(0, 0, 0, 1)))
 
         self.edit_login = TextInput(hint_text="Логин", multiline=False, size_hint=(1, None), height=36)
         self.edit_full_name = TextInput(hint_text="ФИО", multiline=False, size_hint=(1, None), height=36)
-        self.edit_password = TextInput(hint_text="Пароль (для обновления)", multiline=False, password=True, size_hint=(1, None), height=36)
+        self.edit_password = TextInput(hint_text="Пароль (для обновления)", multiline=False, password=True,
+                                       size_hint=(1, None), height=36)
         self.edit_department = TextInput(hint_text="Отдел", multiline=False, size_hint=(1, None), height=36)
-        self.edit_role = Spinner(text=UserRole.WORKER.value, values=[role.value for role in UserRole], size_hint=(1, None), height=36)
+        self.edit_role = Spinner(text=UserRole.WORKER.value, values=[role.value for role in UserRole],
+                                 size_hint=(1, None), height=36)
 
         right.add_widget(self.edit_login)
         right.add_widget(self.edit_full_name)
@@ -71,8 +91,14 @@ class AdminUserManagementScreen(LightScreen):
         )
         right.add_widget(self.view_requests_button)
 
+        right_container.add_widget(right)
+
+        # Нижний spacer
+        right_container.add_widget(Widget(size_hint_y=1))
+
         content.add_widget(left)
-        content.add_widget(right)
+        content.add_widget(right_container)
+
         root.add_widget(content)
         self.add_widget(root)
 
@@ -80,8 +106,8 @@ class AdminUserManagementScreen(LightScreen):
         self.load_users()
 
     def go_back(self, *_):
-        self.manager.get_screen("admin_dashboard").refresh()
-        self.manager.safe_switch("admin_dashboard")
+        self.manager.get_screen("order_dashboard").refresh()
+        self.manager.safe_switch("order_dashboard")
 
     def load_users(self):
         self.run_async(self._load_users_async(), self._set_users, self._error)
@@ -142,13 +168,14 @@ class AdminUserManagementScreen(LightScreen):
         if exists:
             raise Exception("Пользователь с таким логином уже существует")
 
-        return await repo.create(
+        await repo.create(
             login=login,
             password=password,
             full_name=full_name,
             role=UserRole(self.edit_role.text),
             department=self.edit_department.text.strip() or None,
         )
+        return "Пользователь успешно добавлен"
 
     def save_user(self, *_):
         self.run_async(self._save_user_async(), self._after_user_updated, self._error)
@@ -162,18 +189,30 @@ class AdminUserManagementScreen(LightScreen):
         if not fresh_user:
             raise Exception("Пользователь не найден")
 
-        update_data = {
-            "login": self.edit_login.text.strip(),
-            "full_name": self.edit_full_name.text.strip(),
-            "role": UserRole(self.edit_role.text),
-            "department": self.edit_department.text.strip() or None,
-        }
+        update_data = {}
 
         password = self.edit_password.text.strip()
         if password:
             update_data["password"] = password
 
-        return await repo.update(fresh_user, **update_data)
+        login = self.edit_login.text.strip()
+        if login:
+            update_data["login"] = login
+
+        full_name = self.edit_full_name.text.strip()
+        if full_name:
+            update_data["full_name"] = full_name
+
+        role = UserRole(self.edit_role.text)
+        if password:
+            update_data["role"] = role
+
+        department = self.edit_department.text.strip() or None
+        update_data["department"] = department
+
+        await repo.update(fresh_user, **update_data)
+        return "Данные успешно изменены"
+
 
     def delete_user(self, *_):
         self.run_async(self._delete_user_async(), self._after_delete_user, self._error)
@@ -187,9 +226,10 @@ class AdminUserManagementScreen(LightScreen):
         if not fresh_user:
             raise Exception("Пользователь не найден")
 
-        return await repo.soft_delete(fresh_user)
+        await repo.soft_delete(fresh_user)
+        return "Пользователь успешно удалён"
 
-    def _after_delete_user(self, _):
+    def _after_delete_user(self, message):
         self.selected_user = None
         self.edit_login.text = ""
         self.edit_full_name.text = ""
@@ -198,10 +238,11 @@ class AdminUserManagementScreen(LightScreen):
         self.edit_role.text = UserRole.WORKER.value
         self.user_requests_title.text = "Заявки пользователя"
         self.view_requests_button.disabled = True
-        self._after_user_updated(_)
+        self._after_user_updated(message)
 
-    def _after_user_updated(self, _):
+    def _after_user_updated(self, message):
         self.load_users()
+        show_modal(str(message))
 
     def _error(self, error, **kwargs):
         show_modal(str(error))

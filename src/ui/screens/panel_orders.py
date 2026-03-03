@@ -24,17 +24,17 @@ STATUS_RU = {
 }
 
 
-class AdminDashboardScreen(LightScreen):
+class OrdersDashboardScreen(LightScreen):
     def __init__(self, **kwargs):
         super().__init__(**kwargs)
-        self.name = "admin_dashboard"
+        self.name = "order_dashboard"
 
         root = BoxLayout(orientation="vertical", padding=20, spacing=15)
 
         header = BoxLayout(size_hint=(1, None), height=40)
 
         header.add_widget(Label(
-            text="Панель администратора",
+            text="Панель заявок",
             font_size=22,
             color=(0, 0, 0, 1),
         ))
@@ -230,6 +230,12 @@ class AdminDashboardScreen(LightScreen):
             created_by = self.manager.current_user_id
 
         repo = await get_repair_request_repository()
+
+        if not self.equipment_input.text.strip():
+            raise Exception("Заполните имя инструмента")
+
+        if not self.problem_input.text.strip():
+            raise Exception("Заполните проблему")
 
         return await repo.create(
             created_by=created_by,

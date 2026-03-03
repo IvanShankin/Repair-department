@@ -71,8 +71,8 @@ class RequestsReviewScreen(LightScreen):
             self.manager.get_screen("master_dashboard").refresh()
             self.manager.safe_switch("master_dashboard")
         else:
-            self.manager.get_screen("admin_dashboard").refresh()
-            self.manager.safe_switch("admin_dashboard")
+            self.manager.get_screen("order_dashboard").refresh()
+            self.manager.safe_switch("order_dashboard")
 
     def load_requests(self):
         if not self.target_user:
@@ -196,6 +196,14 @@ class RequestsReviewScreen(LightScreen):
                     )
                 )
 
+            if current_role == UserRole.ADMIN:
+                controls.add_widget(
+                    Button(
+                        text="Удалить заявку",
+                        on_press=lambda _, req=request: self.delete_request(req),
+                    )
+                )
+
         else:
             controls.add_widget(Label(text="Только просмотр", color=(0, 0, 0, 1)))
 
@@ -223,7 +231,8 @@ class RequestsReviewScreen(LightScreen):
         if not fresh:
             raise Exception("Заявка не найдена")
 
-        return await repo.update_status(fresh, status)
+        await repo.update_status(fresh, status)
+        return "Статус успешно изменён"
 
     def take_request(self, request):
         self.run_async(
@@ -242,10 +251,30 @@ class RequestsReviewScreen(LightScreen):
         if fresh.assigned_master is not None:
             raise Exception("Заявка уже закреплена за мастером")
 
-        return await repo.update(fresh, assigned_master=self.manager.current_user_id)
+        await repo.update(fresh, assigned_master=self.manager.current_user_id)
+        return "Заявка успешно прикреплена"
 
-    def _after_action(self, _):
+
+    def delete_request(self, request):
+        self.run_async(
+            self._delete_request_async(request.id),
+            self._after_action,
+            self._error,
+        )
+
+    async def _delete_request_async(self, request_id: int):
+        repo = await get_repair_request_repository()
+        fresh = await repo.get_by_id(request_id)
+
+        if not fresh:
+            raise Exception("Заявка не найдена")
+        await repo.delete(request_id)
+
+        return "Заяка успешно удалена"
+
+    def _after_action(self, message: str):
         self.load_requests()
+        show_modal(message)
 
     def _error(self, error, **kwargs):
         show_modal(str(error))

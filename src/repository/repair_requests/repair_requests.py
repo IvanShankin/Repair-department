@@ -1,6 +1,6 @@
 from typing import Optional, List
 
-from sqlalchemy import select
+from sqlalchemy import select, delete
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from src.database.models import RepairRequests, RequestStatus
@@ -36,21 +36,21 @@ class RepairRequestRepository:
         return await self.session.get(RepairRequests, request_id)
 
     async def get_all(self) -> List[RepairRequests]:
-        stmt = select(RepairRequests)
+        stmt = select(RepairRequests).order_by(RepairRequests.created_by.desc())
         result = await self.session.execute(stmt)
         return result.scalars().all()
 
     async def get_by_creator(self, user_id: int) -> List[RepairRequests]:
         stmt = select(RepairRequests).where(
             RepairRequests.created_by == user_id
-        )
+        ).order_by(RepairRequests.created_by.desc())
         result = await self.session.execute(stmt)
         return result.scalars().all()
 
     async def get_by_master(self, master_id: int) -> List[RepairRequests]:
         stmt = select(RepairRequests).where(
             RepairRequests.assigned_master == master_id
-        )
+        ).order_by(RepairRequests.created_by.desc())
         result = await self.session.execute(stmt)
         return result.scalars().all()
 
@@ -75,6 +75,6 @@ class RepairRequestRepository:
 
         return request
 
-    async def delete(self, request: RepairRequests) -> None:
-        await self.session.delete(request)
+    async def delete(self, request_id: int) -> None:
+        await self.session.execute(delete(RepairRequests).where(RepairRequests.id == request_id))
         await self.session.commit()

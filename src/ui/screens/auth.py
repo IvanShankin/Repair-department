@@ -128,8 +128,8 @@ class AuthScreen(LightScreen):
         sm.current_role = user.role
 
         if user.role in (UserRole.ADMIN, UserRole.WORKER):
-            sm.get_screen("admin_dashboard").refresh()
-            sm.safe_switch("admin_dashboard")
+            sm.get_screen("order_dashboard").refresh()
+            sm.safe_switch("order_dashboard")
         elif user.role == UserRole.MASTER:
             sm.get_screen("master_dashboard").refresh()
             sm.safe_switch("master_dashboard")

@@ -109,7 +109,7 @@ class MasterDashboardScreen(LightScreen):
         row = BoxLayout(
             orientation="vertical",
             size_hint=(1, None),
-            height=90,
+            height=120,
             padding=8,
             spacing=4,
         )
@@ -128,7 +128,7 @@ class MasterDashboardScreen(LightScreen):
             Label(
                 text=f"[{request.id}] {request.equipment_name}",
                 color=(0, 0, 0, 1),
-                halign="left",
+                halign="center",
                 text_size=(1000, None),
             )
         )
@@ -136,7 +136,7 @@ class MasterDashboardScreen(LightScreen):
             Label(
                 text=f"Статус: {STATUS_RU.get(request.status, request.status.value)} | Проблема: {request.description_problem}",
                 color=(0, 0, 0, 1),
-                halign="left",
+                halign="center",
                 text_size=(1000, None),
             )
         )

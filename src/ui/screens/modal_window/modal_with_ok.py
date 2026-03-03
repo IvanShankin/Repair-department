@@ -26,7 +26,7 @@ def show_modal(text: str):
     )
 
     label = Label(
-        text=text,
+        text=str(text),
         size_hint=(1, None),
         halign="center",
         valign="middle",

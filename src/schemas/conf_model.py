@@ -25,7 +25,7 @@ class Config(BaseModel):
     base: Path = get_base_dir()
 
     media: Path = base / "media"
-    log_file: Path = media / "mobile_app.log"
+    log_file: Path = media / "app.log"
     data_base_path: Path = media / "data_base.sqlite3"
 
     global_event_loop: AbstractEventLoop

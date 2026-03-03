@@ -23,7 +23,6 @@ class BaseFormScreen(Screen):
 
     def run_async(self, coro, on_success=None, on_error=None):
         loop = get_config().global_event_loop
-        print(loop.is_running())
         future: Future = asyncio.run_coroutine_threadsafe(coro, loop)
 
         def done_callback(done: Future):
