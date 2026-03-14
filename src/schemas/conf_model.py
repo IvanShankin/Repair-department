@@ -1,5 +1,5 @@
 import os
-import sys
+from kivy.app import App
 from asyncio import AbstractEventLoop
 from pathlib import Path
 from typing import Set
@@ -8,17 +8,15 @@ from pydantic import BaseModel
 
 
 def get_base_dir() -> Path:
-    """
-    Возвращает правильную базовую директорию:
-    - dev режим → root_dir
-    - exe режим → папка где лежит exe
-    """
-    if getattr(sys, "frozen", False):
-        # exe режим
-        return Path(sys.executable).parent
-    else:
-        # dev режим
-        return Path(__file__).resolve().parents[2]
+    try:
+        app = App.get_running_app()
+        if app:
+            return Path(app.user_data_dir)
+    except Exception:
+        pass
+
+    # fallback для dev режима
+    return Path(__file__).resolve().parents[2]
 
 
 class Config(BaseModel):
@@ -27,6 +25,8 @@ class Config(BaseModel):
     media: Path = base / "media"
     log_file: Path = media / "app.log"
     data_base_path: Path = media / "data_base.sqlite3"
+
+    media.mkdir(parents=True, exist_ok=True)
 
     global_event_loop: AbstractEventLoop
 
@@ -38,13 +38,12 @@ class Config(BaseModel):
     hint_color: Set = (0.5, 0.5, 0.5, 1)  # средне-серый для подсказок
 
 
-    model_config = {
-        "arbitrary_types_allowed": True,
-    }
+    class Config:
+        arbitrary_types_allowed = True
 
     @property
     def sqlite_url(self) -> str:
-        return f"sqlite+aiosqlite:///{self.data_base_path}"
+        return f"sqlite:///{self.data_base_path.as_posix()}"
 
 
 # создаём папку media гарантированно

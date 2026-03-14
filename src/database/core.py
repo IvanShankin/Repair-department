@@ -1,15 +1,16 @@
-from contextlib import asynccontextmanager
+from contextlib import contextmanager
 from typing import Any
 
-from sqlalchemy import inspect
-from sqlalchemy.ext.asyncio import AsyncSession, create_async_engine
-from sqlalchemy.orm import sessionmaker, declarative_base
+from sqlalchemy import create_engine, inspect
+from sqlalchemy.ext.declarative import declarative_base
+from sqlalchemy.orm import sessionmaker
 
 from src.service.config.core import get_config
 
 
 Base_sqlalchemy = declarative_base()
-_AsyncSessionLocal: Any = None
+_SessionLocal: Any = None
+
 
 class Base(Base_sqlalchemy):
     __abstract__ = True
@@ -18,30 +19,35 @@ class Base(Base_sqlalchemy):
         return {c.key: getattr(self, c.key) for c in inspect(self).mapper.column_attrs}
 
 
-async def init_db():
-    global _AsyncSessionLocal
+def init_db():
+    global _SessionLocal
     conf = get_config()
 
-    # создаём engine один раз
-    engine = create_async_engine(conf.sqlite_url, echo=True)
+    # СЃРѕР·РґР°С‘Рј engine РѕРґРёРЅ СЂР°Р·
+    engine = create_engine(
+        conf.sqlite_url,
+        echo=True,
+        connect_args={"check_same_thread": False},
+    )
 
-    _AsyncSessionLocal = sessionmaker(
+    _SessionLocal = sessionmaker(
         bind=engine,
         expire_on_commit=False,
-        class_=AsyncSession,
     )
 
 
-def get_async_session():
-    global _AsyncSessionLocal
-    if _AsyncSessionLocal is None:
-        raise RuntimeError("Сессия не инициализированна")
-    return _AsyncSessionLocal
+def get_session_factory():
+    global _SessionLocal
+    if _SessionLocal is None:
+        raise RuntimeError("Сессия не инициализирована")
+    return _SessionLocal
 
 
-@asynccontextmanager
-async def get_db() -> AsyncSession:
-    session_factory = get_async_session()
-
-    async with session_factory() as session:
+@contextmanager
+def get_db():
+    session_factory = get_session_factory()
+    session = session_factory()
+    try:
         yield session
+    finally:
+        session.close()

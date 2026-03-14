@@ -113,8 +113,8 @@ class AdminUserManagementScreen(LightScreen):
         self.run_async(self._load_users_async(), self._set_users, self._error)
 
     async def _load_users_async(self):
-        repo = await get_user_repository()
-        return await repo.get_all()
+        repo = get_user_repository()
+        return repo.get_all()
 
     def _set_users(self, users: List[Users]):
         self.users_list_container.clear_widgets()
@@ -163,12 +163,12 @@ class AdminUserManagementScreen(LightScreen):
         if not login or not full_name or not password:
             raise Exception("Логин, ФИО и пароль обязательны")
 
-        repo = await get_user_repository()
-        exists = await repo.get_by_login(login)
+        repo = get_user_repository()
+        exists = repo.get_by_login(login)
         if exists:
             raise Exception("Пользователь с таким логином уже существует")
 
-        await repo.create(
+        repo.create(
             login=login,
             password=password,
             full_name=full_name,
@@ -184,8 +184,8 @@ class AdminUserManagementScreen(LightScreen):
         if not self.selected_user:
             raise Exception("Сначала выберите пользователя")
 
-        repo = await get_user_repository()
-        fresh_user = await repo.get_by_id(self.selected_user.id)
+        repo = get_user_repository()
+        fresh_user = repo.get_by_id(self.selected_user.id)
         if not fresh_user:
             raise Exception("Пользователь не найден")
 
@@ -210,7 +210,7 @@ class AdminUserManagementScreen(LightScreen):
         department = self.edit_department.text.strip() or None
         update_data["department"] = department
 
-        await repo.update(fresh_user, **update_data)
+        repo.update(fresh_user, **update_data)
         return "Данные успешно изменены"
 
 
@@ -221,12 +221,12 @@ class AdminUserManagementScreen(LightScreen):
         if not self.selected_user:
             raise Exception("Сначала выберите пользователя")
 
-        repo = await get_user_repository()
-        fresh_user = await repo.get_by_id(self.selected_user.id)
+        repo = get_user_repository()
+        fresh_user = repo.get_by_id(self.selected_user.id)
         if not fresh_user:
             raise Exception("Пользователь не найден")
 
-        await repo.soft_delete(fresh_user)
+        repo.soft_delete(fresh_user)
         return "Пользователь успешно удалён"
 
     def _after_delete_user(self, message):

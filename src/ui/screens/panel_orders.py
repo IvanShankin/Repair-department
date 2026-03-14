@@ -126,18 +126,18 @@ class OrdersDashboardScreen(LightScreen):
         self.run_async(self._refresh_async(), self._after_refresh, self._error)
 
     async def _refresh_async(self):
-        user_repo = await get_user_repository()
-        current_user = await user_repo.get_by_id(self.manager.current_user_id)
+        user_repo = get_user_repository()
+        current_user = user_repo.get_by_id(self.manager.current_user_id)
 
         users = []
         if self.manager.current_role == UserRole.ADMIN:
-            users = await user_repo.get_all()
+            users = user_repo.get_all()
 
-        requests_repo = await get_repair_request_repository()
+        requests_repo = get_repair_request_repository()
         if self.manager.current_role == UserRole.ADMIN:
-            requests = await requests_repo.get_all()
+            requests = requests_repo.get_all()
         else:
-            requests = await requests_repo.get_by_creator(self.manager.current_user_id)
+            requests = requests_repo.get_by_creator(self.manager.current_user_id)
 
         return current_user, users, requests
 
@@ -229,7 +229,7 @@ class OrdersDashboardScreen(LightScreen):
         else:
             created_by = self.manager.current_user_id
 
-        repo = await get_repair_request_repository()
+        repo = get_repair_request_repository()
 
         if not self.equipment_input.text.strip():
             raise Exception("Заполните имя инструмента")
@@ -237,7 +237,7 @@ class OrdersDashboardScreen(LightScreen):
         if not self.problem_input.text.strip():
             raise Exception("Заполните проблему")
 
-        return await repo.create(
+        return repo.create(
             created_by=created_by,
             equipment_name=self.equipment_input.text.strip(),
             description_problem=self.problem_input.text.strip(),

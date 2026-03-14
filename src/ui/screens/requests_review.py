@@ -22,6 +22,7 @@ STATUS_RU = {
 
 RU_TO_STATUS = {value: key for key, value in STATUS_RU.items()}
 
+
 class RequestsReviewScreen(LightScreen):
     def __init__(self, **kwargs):
         super().__init__(**kwargs)
@@ -85,16 +86,16 @@ class RequestsReviewScreen(LightScreen):
         )
 
     async def _load_requests_async(self, user: Users):
-        repo = await get_repair_request_repository()
+        repo = get_repair_request_repository()
 
         if user.role == UserRole.WORKER:
-            requests = await repo.get_by_creator(user.id)
+            requests = repo.get_by_creator(user.id)
             title = f"Заявки рабочего: {user.full_name}"
         elif user.role == UserRole.MASTER:
-            requests = await repo.get_by_master(user.id)
+            requests = repo.get_by_master(user.id)
             title = f"Заявки мастера: {user.full_name}"
         else:
-            requests = await repo.get_all()
+            requests = repo.get_all()
             title = "Все заявки (ADMIN)"
 
         return title, requests
@@ -130,12 +131,12 @@ class RequestsReviewScreen(LightScreen):
             spacing=6,
         )
 
-        # Рисуем серый фон
+        # Р РёСЃСѓРµРј СЃРµСЂС‹Р№ С„РѕРЅ
         with row.canvas.before:
-            Color(0.8, 0.8, 0.8, 1)  # серый
+            Color(0.8, 0.8, 0.8, 1)  # СЃРµСЂС‹Р№
             row.bg_rect = Rectangle(pos=row.pos, size=row.size)
 
-        # Обновляем фон при изменении размера / позиции
+        # РћР±РЅРѕРІР»СЏРµРј С„РѕРЅ РїСЂРё РёР·РјРµРЅРµРЅРёРё СЂР°Р·РјРµСЂР° / РїРѕР·РёС†РёРё
         def update_bg(instance, value):
             instance.bg_rect.pos = instance.pos
             instance.bg_rect.size = instance.size
@@ -163,7 +164,6 @@ class RequestsReviewScreen(LightScreen):
                 text_size=(1000, None),
             )
         )
-
 
         controls = BoxLayout(size_hint=(1, None), height=35, spacing=6)
         current_role = self.manager.current_role
@@ -226,12 +226,12 @@ class RequestsReviewScreen(LightScreen):
         )
 
     async def _update_status_async(self, request_id: int, status: RequestStatus):
-        repo = await get_repair_request_repository()
-        fresh = await repo.get_by_id(request_id)
+        repo = get_repair_request_repository()
+        fresh = repo.get_by_id(request_id)
         if not fresh:
             raise Exception("Заявка не найдена")
 
-        await repo.update_status(fresh, status)
+        repo.update_status(fresh, status)
         return "Статус успешно изменён"
 
     def take_request(self, request):
@@ -242,8 +242,8 @@ class RequestsReviewScreen(LightScreen):
         )
 
     async def _take_request_async(self, request_id: int):
-        repo = await get_repair_request_repository()
-        fresh = await repo.get_by_id(request_id)
+        repo = get_repair_request_repository()
+        fresh = repo.get_by_id(request_id)
 
         if not fresh:
             raise Exception("Заявка не найдена")
@@ -251,9 +251,8 @@ class RequestsReviewScreen(LightScreen):
         if fresh.assigned_master is not None:
             raise Exception("Заявка уже закреплена за мастером")
 
-        await repo.update(fresh, assigned_master=self.manager.current_user_id)
+        repo.update(fresh, assigned_master=self.manager.current_user_id)
         return "Заявка успешно прикреплена"
-
 
     def delete_request(self, request):
         self.run_async(
@@ -263,12 +262,12 @@ class RequestsReviewScreen(LightScreen):
         )
 
     async def _delete_request_async(self, request_id: int):
-        repo = await get_repair_request_repository()
-        fresh = await repo.get_by_id(request_id)
+        repo = get_repair_request_repository()
+        fresh = repo.get_by_id(request_id)
 
         if not fresh:
             raise Exception("Заявка не найдена")
-        await repo.delete(request_id)
+        repo.delete(request_id)
 
         return "Заяка успешно удалена"
 

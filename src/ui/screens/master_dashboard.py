@@ -78,11 +78,11 @@ class MasterDashboardScreen(LightScreen):
         self.run_async(self._refresh_async(), self._after_refresh, self._error)
 
     async def _refresh_async(self):
-        user_repo = await get_user_repository()
-        requests_repo = await get_repair_request_repository()
+        user_repo = get_user_repository()
+        requests_repo = get_repair_request_repository()
 
-        current_user = await user_repo.get_by_id(self.manager.current_user_id)
-        requests = await requests_repo.get_all()
+        current_user = user_repo.get_by_id(self.manager.current_user_id)
+        requests = requests_repo.get_all()
         unassigned = [request for request in requests if request.assigned_master is None]
         return current_user, unassigned
 
@@ -169,8 +169,8 @@ class MasterDashboardScreen(LightScreen):
         )
 
     async def _take_request_async(self, request_id: int):
-        repo = await get_repair_request_repository()
-        fresh = await repo.get_by_id(request_id)
+        repo = get_repair_request_repository()
+        fresh = repo.get_by_id(request_id)
 
         if not fresh:
             raise Exception("Заявка не найдена")
@@ -178,7 +178,7 @@ class MasterDashboardScreen(LightScreen):
         if fresh.assigned_master is not None:
             raise Exception("Заявка уже закреплена за мастером")
 
-        return await repo.update(fresh, assigned_master=self.manager.current_user_id)
+        return repo.update(fresh, assigned_master=self.manager.current_user_id)
 
     def _after_take(self, _):
         self.refresh()

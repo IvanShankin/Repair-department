@@ -1,17 +1,12 @@
 from typing import Optional, List
 
-from sqlalchemy import select, delete
-from sqlalchemy.ext.asyncio import AsyncSession
-
+from src.database.core import get_db
 from src.database.models import RepairRequests, RequestStatus
 
 
 class RepairRequestRepository:
 
-    def __init__(self, session: AsyncSession):
-        self.session = session
-
-    async def create(
+    def create(
         self,
         created_by: int,
         equipment_name: str,
@@ -26,55 +21,87 @@ class RepairRequestRepository:
             description_problem=description_problem,
         )
 
-        self.session.add(request)
-        await self.session.commit()
-        await self.session.refresh(request)
+        with get_db() as session:
+            try:
+                session.add(request)
+                session.commit()
+                session.refresh(request)
+            except Exception:
+                session.rollback()
+                raise
 
         return request
 
-    async def get_by_id(self, request_id: int) -> Optional[RepairRequests]:
-        return await self.session.get(RepairRequests, request_id)
+    def get_by_id(self, request_id: int) -> Optional[RepairRequests]:
+        with get_db() as session:
+            return session.query(RepairRequests).get(request_id)
 
-    async def get_all(self) -> List[RepairRequests]:
-        stmt = select(RepairRequests).order_by(RepairRequests.created_by.desc())
-        result = await self.session.execute(stmt)
-        return result.scalars().all()
+    def get_all(self) -> List[RepairRequests]:
+        with get_db() as session:
+            return (
+                session.query(RepairRequests)
+                .order_by(RepairRequests.created_by.desc())
+                .all()
+            )
 
-    async def get_by_creator(self, user_id: int) -> List[RepairRequests]:
-        stmt = select(RepairRequests).where(
-            RepairRequests.created_by == user_id
-        ).order_by(RepairRequests.created_by.desc())
-        result = await self.session.execute(stmt)
-        return result.scalars().all()
+    def get_by_creator(self, user_id: int) -> List[RepairRequests]:
+        with get_db() as session:
+            return (
+                session.query(RepairRequests)
+                .filter(RepairRequests.created_by == user_id)
+                .order_by(RepairRequests.created_by.desc())
+                .all()
+            )
 
-    async def get_by_master(self, master_id: int) -> List[RepairRequests]:
-        stmt = select(RepairRequests).where(
-            RepairRequests.assigned_master == master_id
-        ).order_by(RepairRequests.created_by.desc())
-        result = await self.session.execute(stmt)
-        return result.scalars().all()
+    def get_by_master(self, master_id: int) -> List[RepairRequests]:
+        with get_db() as session:
+            return (
+                session.query(RepairRequests)
+                .filter(RepairRequests.assigned_master == master_id)
+                .order_by(RepairRequests.created_by.desc())
+                .all()
+            )
 
-    async def update(self, request: RepairRequests, **kwargs) -> RepairRequests:
+    def update(self, request: RepairRequests, **kwargs) -> RepairRequests:
         for key, value in kwargs.items():
             setattr(request, key, value)
 
-        await self.session.commit()
-        await self.session.refresh(request)
+        with get_db() as session:
+            try:
+                merged = session.merge(request)
+                session.commit()
+                session.refresh(merged)
+            except Exception:
+                session.rollback()
+                raise
 
-        return request
+        return merged
 
-    async def update_status(
+    def update_status(
         self,
         request: RepairRequests,
         status: RequestStatus
     ) -> RepairRequests:
         request.status = status
 
-        await self.session.commit()
-        await self.session.refresh(request)
+        with get_db() as session:
+            try:
+                merged = session.merge(request)
+                session.commit()
+                session.refresh(merged)
+            except Exception:
+                session.rollback()
+                raise
 
-        return request
+        return merged
 
-    async def delete(self, request_id: int) -> None:
-        await self.session.execute(delete(RepairRequests).where(RepairRequests.id == request_id))
-        await self.session.commit()
+    def delete(self, request_id: int) -> None:
+        with get_db() as session:
+            try:
+                session.query(RepairRequests).filter(
+                    RepairRequests.id == request_id
+                ).delete(synchronize_session=False)
+                session.commit()
+            except Exception:
+                session.rollback()
+                raise

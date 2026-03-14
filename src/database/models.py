@@ -2,18 +2,15 @@ from datetime import datetime, UTC
 from enum import Enum
 
 from sqlalchemy import (
-    String,
-    Integer,
-    ForeignKey,
+    Boolean,
+    Column,
     DateTime,
     Enum as SqlEnum,
-    Boolean,
+    ForeignKey,
+    Integer,
+    String,
 )
-from sqlalchemy.orm import (
-    Mapped,
-    mapped_column,
-    relationship,
-)
+from sqlalchemy.orm import relationship
 
 from src.database.core import Base
 
@@ -34,73 +31,76 @@ class RequestStatus(str, Enum):
 class Users(Base):
     __tablename__ = "users"
 
-    id: Mapped[int] = mapped_column(Integer, primary_key=True)
-    login: Mapped[str] = mapped_column(String(50), unique=True, nullable=False)
-    hash_password: Mapped[str] = mapped_column(String(500), nullable=False)
-    full_name: Mapped[str] = mapped_column(String(500), nullable=False)
+    id = Column(Integer, primary_key=True)
+    login = Column(String(50), unique=True, nullable=False)
+    hash_password = Column(String(500), nullable=False)
+    full_name = Column(String(500), nullable=False)
 
-    role: Mapped[UserRole] = mapped_column(
-        SqlEnum(UserRole),
-        nullable=False
-    )
+    role = Column(SqlEnum(UserRole), nullable=False)
 
-    department: Mapped[str | None] = mapped_column(String(255), nullable=True)
-    is_deleted: Mapped[bool] = mapped_column(Boolean, nullable=False, default=False)
+    department = Column(String(255), nullable=True)
+    is_deleted = Column(Boolean, nullable=False, default=False)
 
     # Relationships
-    created_requests: Mapped[list["RepairRequests"]] = relationship(
+    created_requests = relationship(
+        "RepairRequests",
         back_populates="creator",
-        foreign_keys="RepairRequests.created_by"
+        foreign_keys="RepairRequests.created_by",
     )
 
-    assigned_requests: Mapped[list["RepairRequests"]] = relationship(
+    assigned_requests = relationship(
+        "RepairRequests",
         back_populates="master",
-        foreign_keys="RepairRequests.assigned_master"
+        foreign_keys="RepairRequests.assigned_master",
     )
 
 
 class RepairRequests(Base):
     __tablename__ = "repair_requests"
 
-    id: Mapped[int] = mapped_column(Integer, primary_key=True)
+    id = Column(Integer, primary_key=True)
 
-    created_by: Mapped[int] = mapped_column(
+    created_by = Column(
+        Integer,
         ForeignKey("users.id"),
-        nullable=False
+        nullable=False,
     )
 
-    assigned_master: Mapped[int | None] = mapped_column(
+    assigned_master = Column(
+        Integer,
         ForeignKey("users.id"),
-        nullable=True
+        nullable=True,
     )
 
-    equipment_name: Mapped[str] = mapped_column(String(255), nullable=False)
-    description_problem: Mapped[str] = mapped_column(String(1000), nullable=False)
+    equipment_name = Column(String(255), nullable=False)
+    description_problem = Column(String(1000), nullable=False)
 
-    status: Mapped[RequestStatus] = mapped_column(
+    status = Column(
         SqlEnum(RequestStatus),
         nullable=False,
-        default=RequestStatus.NEW
+        default=RequestStatus.NEW,
     )
 
-    created_at: Mapped[datetime] = mapped_column(
+    created_at = Column(
         DateTime,
-        default=datetime.now(UTC)
+        default=lambda: datetime.now(UTC),
     )
 
-    updated_at: Mapped[datetime] = mapped_column(
+    updated_at = Column(
         DateTime,
-        default=datetime.now(UTC),
-        onupdate=datetime.now(UTC)
+        default=lambda: datetime.now(UTC),
+        onupdate=lambda: datetime.now(UTC),
     )
 
     # Relationships
-    creator: Mapped["Users"] = relationship(
+    creator = relationship(
+        "Users",
         back_populates="created_requests",
-        foreign_keys=[created_by]
+        foreign_keys=[created_by],
     )
 
-    master: Mapped["Users"] = relationship(
+    master = relationship(
+        "Users",
         back_populates="assigned_requests",
-        foreign_keys=[assigned_master]
+        foreign_keys=[assigned_master],
     )

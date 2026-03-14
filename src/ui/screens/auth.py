@@ -111,8 +111,8 @@ class AuthScreen(LightScreen):
         )
 
     async def _login_async(self):
-        repo = await get_user_repository()
-        user = await repo.get_by_login(self.login.text.strip())
+        repo = get_user_repository()
+        user = repo.get_by_login(self.login.text.strip())
 
         if not user:
             raise Exception("Пользователь не найден")
