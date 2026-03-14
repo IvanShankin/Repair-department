@@ -1,0 +1,6 @@
+--- jnius/jnius_utils.pxi.orig	2026-03-14
++++ jnius/jnius_utils.pxi
+@@ -1,0 +1,3 @@
++try:
++    long
++except NameError: long = int
