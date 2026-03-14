@@ -4,6 +4,7 @@ from kivy.uix.button import Button
 from kivy.uix.gridlayout import GridLayout
 from kivy.uix.label import Label
 from kivy.uix.scrollview import ScrollView
+from kivy.metrics import dp, sp
 
 from src.database.models import RepairRequests, RequestStatus, UserRole, Users
 from src.repository.repair_requests import get_repair_request_repository
@@ -29,43 +30,56 @@ class MasterDashboardScreen(LightScreen):
         self.selected_request_id: int | None = None
         self.row_by_request_id: dict[int, BoxLayout] = {}
 
-        root = BoxLayout(orientation="vertical", padding=15, spacing=10)
+        root = BoxLayout(orientation="vertical", padding=dp(12), spacing=dp(10))
 
-        header = BoxLayout(size_hint=(1, None), height=45)
+        # Header
+        header = BoxLayout(size_hint=(1, None), height=dp(50), spacing=dp(10))
         self.title_label = Label(
             text="Нераспределённые заявки",
-            font_size=20,
+            font_size=sp(20),
             color=(0, 0, 0, 1),
+            halign="left",
+            valign="middle"
         )
+        self.title_label.bind(size=lambda w, h: setattr(self.title_label, 'text_size', (self.title_label.width, None)))
         header.add_widget(self.title_label)
         header.add_widget(
             Button(
                 text="Выйти",
                 size_hint=(None, 1),
-                width=120,
+                width=dp(120),
                 on_press=self.logout,
+                font_size=sp(16),
             )
         )
         root.add_widget(header)
 
-        self.requests_container = GridLayout(cols=1, spacing=8, size_hint_y=None)
+        # Requests ScrollView
+        self.requests_container = GridLayout(
+            cols=1,
+            spacing=dp(8),
+            size_hint_y=None
+        )
         self.requests_container.bind(minimum_height=self.requests_container.setter("height"))
 
-        scroll = ScrollView()
+        scroll = ScrollView(size_hint=(1, 1))
         scroll.add_widget(self.requests_container)
         root.add_widget(scroll)
 
-        actions = BoxLayout(size_hint=(1, None), height=50, spacing=10)
+        # Actions
+        actions = BoxLayout(size_hint=(1, None), height=dp(50), spacing=dp(10))
         actions.add_widget(
             Button(
                 text="Взяться за заявку",
                 on_press=self.take_selected_request,
+                font_size=sp(16),
             )
         )
         actions.add_widget(
             Button(
                 text="Мои заявки",
                 on_press=self.open_my_requests,
+                font_size=sp(16),
             )
         )
         root.add_widget(actions)
@@ -96,7 +110,13 @@ class MasterDashboardScreen(LightScreen):
 
         if not self.requests_data:
             self.requests_container.add_widget(
-                Label(text="Нет нераспределённых заявок", size_hint=(1, None), height=40, color=(0, 0, 0, 1))
+                Label(
+                    text="Нет нераспределённых заявок",
+                    size_hint=(1, None),
+                    height=dp(50),
+                    font_size=sp(16),
+                    color=(0, 0, 0, 1)
+                )
             )
             return
 
@@ -109,9 +129,9 @@ class MasterDashboardScreen(LightScreen):
         row = BoxLayout(
             orientation="vertical",
             size_hint=(1, None),
-            height=120,
-            padding=8,
-            spacing=4,
+            height=dp(120),
+            padding=dp(8),
+            spacing=dp(4)
         )
 
         with row.canvas.before:
@@ -129,7 +149,8 @@ class MasterDashboardScreen(LightScreen):
                 text=f"[{request.id}] {request.equipment_name}",
                 color=(0, 0, 0, 1),
                 halign="center",
-                text_size=(1000, None),
+                font_size=sp(16),
+                text_size=(None, None)
             )
         )
         row.add_widget(
@@ -137,7 +158,8 @@ class MasterDashboardScreen(LightScreen):
                 text=f"Статус: {STATUS_RU.get(request.status, request.status.value)} | Проблема: {request.description_problem}",
                 color=(0, 0, 0, 1),
                 halign="center",
-                text_size=(1000, None),
+                font_size=sp(14),
+                text_size=(None, None)
             )
         )
 
@@ -145,10 +167,12 @@ class MasterDashboardScreen(LightScreen):
             Button(
                 text="Выбрать",
                 size_hint=(1, None),
-                height=34,
-                on_press=lambda *_: self.select_request(request.id),
+                height=dp(40),
+                font_size=sp(16),
+                on_press=lambda *_: self.select_request(request.id)
             )
         )
+
         return row
 
     def select_request(self, request_id: int):

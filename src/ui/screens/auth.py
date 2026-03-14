@@ -3,6 +3,7 @@ from kivy.uix.button import Button
 from kivy.uix.label import Label
 from kivy.uix.textinput import TextInput
 from kivy.uix.boxlayout import BoxLayout
+from kivy.metrics import dp, sp
 from kivy.core.window import Window
 
 from src.database.models import Users, UserRole
@@ -19,9 +20,8 @@ class StyledTextInput(TextInput):
     def __init__(self, **kwargs):
         super().__init__(**kwargs)
         self.conf = get_config()
-
-        self.padding = [12, 12, 12, 12]
-        self.font_size = 16
+        self.padding = [dp(12)] * 4
+        self.font_size = sp(16)
         self.background_color = self.conf.input_bg
         self.foreground_color = (0, 0, 0, 1)
         self.hint_text_color = (0.6, 0.6, 0.6, 1)
@@ -37,71 +37,69 @@ class AuthScreen(LightScreen):
         self.name = "auth"
         self.conf = get_config()
 
+        # AnchorLayout по центру экрана
         anchor = AnchorLayout(anchor_x="center", anchor_y="center")
         self.add_widget(anchor)
 
+        # Форма авторизации с растягиванием по ширине
         form = BoxLayout(
             orientation="vertical",
-            spacing=12,
-            padding=30,
-            size_hint=(0.6, None),
+            spacing=dp(12),
+            padding=[dp(20), dp(10), dp(20), dp(10)],  # отступы слева/справа и сверху/снизу
+            size_hint=(0.9, None)
         )
         form.bind(minimum_height=form.setter("height"))
         anchor.add_widget(form)
 
-        form.add_widget(
-            Label(
-                text="Авторизация",
-                font_size=26,
-                size_hint_y=None,
-                height=40,
-                color=(0, 0, 0, 1),
-            )
-        )
+        # Заголовок
+        form.add_widget(Label(
+            text="Авторизация",
+            font_size=sp(26),
+            size_hint_y=None,
+            height=dp(50),
+            color=(0, 0, 0, 1),
+            bold=True
+        ))
 
-        form.add_widget(
-            Label(
-                text="Логин",
-                size_hint_y=None,
-                height=25,
-                color=(0, 0, 0, 1),
-            )
-        )
-
+        # Логин
+        form.add_widget(Label(
+            text="Логин",
+            size_hint_y=None,
+            height=dp(25),
+            color=(0, 0, 0, 1)
+        ))
         self.login = StyledTextInput(
             hint_text="Введите логин",
-            size_hint_y=None,
-            height=45,
+            size_hint=(1, None),
+            height=dp(45)
         )
         form.add_widget(self.login)
 
-        form.add_widget(
-            Label(
-                text="Пароль",
-                size_hint_y=None,
-                height=25,
-                color=(0, 0, 0, 1),
-            )
-        )
-
+        # Пароль
+        form.add_widget(Label(
+            text="Пароль",
+            size_hint_y=None,
+            height=dp(25),
+            color=(0, 0, 0, 1)
+        ))
         self.password = StyledTextInput(
             password=True,
             hint_text="Введите пароль",
-            size_hint_y=None,
-            height=45,
+            size_hint=(1, None),
+            height=dp(45)
         )
         form.add_widget(self.password)
 
-        form.add_widget(
-            Button(
-                text="Войти",
-                size_hint_y=None,
-                height=45,
-                background_color=self.conf.primary_btn,
-                color=(1, 1, 1, 1),
-                on_press=self.do_login,
-            )
-        )
+        # Кнопка входа
+        form.add_widget(Button(
+            text="Войти",
+            size_hint=(1, None),
+            height=dp(50),
+            background_color=self.conf.primary_btn,
+            color=(1, 1, 1, 1),
+            font_size=sp(18),
+            on_press=self.do_login
+        ))
 
     def do_login(self, *_):
         self.run_async(

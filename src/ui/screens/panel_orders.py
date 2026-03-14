@@ -1,6 +1,7 @@
 from typing import List
 
 from kivy.graphics import Color, Line, Rectangle
+from kivy.metrics import dp, sp
 from kivy.uix.boxlayout import BoxLayout
 from kivy.uix.button import Button
 from kivy.uix.gridlayout import GridLayout
@@ -28,31 +29,26 @@ class OrdersDashboardScreen(LightScreen):
     def __init__(self, **kwargs):
         super().__init__(**kwargs)
         self.name = "order_dashboard"
+        self.current_user: Users | None = None
+        self.users_map = {}
 
-        root = BoxLayout(orientation="vertical", padding=20, spacing=15)
+        root = BoxLayout(orientation="vertical", padding=dp(12), spacing=dp(12))
 
-        header = BoxLayout(size_hint=(1, None), height=40)
-
-        header.add_widget(Label(
-            text="Панель заявок",
-            font_size=22,
-            color=(0, 0, 0, 1),
-        ))
-
-        logout_btn = Button(
-            text="Выйти",
-            size_hint=(None, 1),
-            width=120,
-            on_press=self.logout
+        # ===== Header =====
+        header = BoxLayout(size_hint=(1, None), height=dp(50))
+        header.add_widget(Label(text="Панель заявок", font_size=sp(20), color=(0, 0, 0, 1), halign="left", valign="middle"))
+        header.children[0].bind(size=lambda w, h: setattr(header.children[0], 'text_size', (header.children[0].width, None)))
+        header.add_widget(
+            Button(text="Выйти",size_hint=(None, 1),width=dp(120),font_size=sp(18),valign='middle',halign='center',
+                text_size=(dp(120), None),  on_press=self.logout
+            )
         )
-
-        header.add_widget(logout_btn)
         root.add_widget(header)
 
         # ===== Список заявок =====
-        root.add_widget(Label(text="Заявки", size_hint=(1, None), height=30, color=(0, 0, 0, 1)))
+        root.add_widget(Label(text="Заявки", size_hint=(1, None), height=dp(40), font_size=sp(18), color=(0, 0, 0, 1)))
 
-        self.requests_container = GridLayout(cols=1, spacing=10, size_hint_y=None)
+        self.requests_container = GridLayout(cols=1, spacing=dp(10), size_hint_y=None)
         self.requests_container.bind(minimum_height=self.requests_container.setter("height"))
 
         scroll = ScrollView(size_hint=(1, 1))
@@ -60,78 +56,39 @@ class OrdersDashboardScreen(LightScreen):
         root.add_widget(scroll)
 
         # ===== Создание заявки =====
-        create_box = BoxLayout(orientation="vertical", spacing=10, size_hint=(1, None), height=280)
+        create_box = BoxLayout(orientation="vertical", spacing=dp(10), size_hint=(1, None), height=dp(300))
 
-        self.mode_label = Label(text="Создать заявку", size_hint=(1, None), height=30, color=(0, 0, 0, 1))
+        self.mode_label = Label(text="Создать заявку", size_hint=(1, None), height=dp(40), font_size=sp(18), color=(0, 0, 0, 1))
         create_box.add_widget(self.mode_label)
 
-        self.user_spinner = Spinner(
-            text="Выберите пользователя",
-            size_hint=(1, None),
-            height=40
-        )
+        self.user_spinner = Spinner(text="Выберите пользователя", size_hint=(1, None), height=dp(50), font_size=sp(18),)
         create_box.add_widget(self.user_spinner)
 
-        self.equipment_input = TextInput(
-            hint_text="Оборудование",
-            multiline=False,
-            size_hint=(1, None),
-            height=40
-        )
-
-        self.problem_input = TextInput(
-            hint_text="Описание проблемы",
-            multiline=False,
-            size_hint=(1, None),
-            height=40
-        )
-
-        create_btn = Button(
-            text="Создать",
-            size_hint=(1, None),
-            height=40,
-            on_press=self.create_request
-        )
-
+        self.equipment_input = TextInput(hint_text="Оборудование", multiline=False, size_hint=(1, None), height=dp(50), font_size=sp(18),)
+        self.problem_input = TextInput(hint_text="Описание проблемы", multiline=False, size_hint=(1, None), height=dp(50), font_size=sp(18),)
         create_box.add_widget(self.equipment_input)
         create_box.add_widget(self.problem_input)
+
+        create_btn = Button(text="Создать", size_hint=(1, None), height=dp(50), font_size=sp(18), on_press=self.create_request)
         create_box.add_widget(create_btn)
 
-        # ===== Управление пользователями =====
-        self.review_requests_btn = Button(
-            text="Просмотреть все мои заявки",
-            size_hint=(1, None),
-            height=40,
-            on_press=self.open_my_requests,
-        )
+        self.review_requests_btn = Button(text="Просмотреть все мои заявки", size_hint=(1, None), height=dp(50), font_size=sp(18), on_press=self.open_my_requests)
         create_box.add_widget(self.review_requests_btn)
 
-        self.manage_users_btn = Button(
-            text="Управление пользователями",
-            size_hint=(1, None),
-            height=40,
-            on_press=self.open_user_management
-        )
+        self.manage_users_btn = Button(text="Управление пользователями", size_hint=(1, None), height=dp(50), font_size=sp(18), on_press=self.open_user_management)
         create_box.add_widget(self.manage_users_btn)
 
         root.add_widget(create_box)
-
         self.add_widget(root)
-        self.current_user: Users | None = None
-        self.users_map = {}
 
     # ================= REFRESH =================
-
     def refresh(self):
         self.run_async(self._refresh_async(), self._after_refresh, self._error)
 
     async def _refresh_async(self):
         user_repo = get_user_repository()
         current_user = user_repo.get_by_id(self.manager.current_user_id)
-
-        users = []
-        if self.manager.current_role == UserRole.ADMIN:
-            users = user_repo.get_all()
+        users = user_repo.get_all() if self.manager.current_role == UserRole.ADMIN else []
 
         requests_repo = get_repair_request_repository()
         if self.manager.current_role == UserRole.ADMIN:
@@ -151,53 +108,40 @@ class OrdersDashboardScreen(LightScreen):
         is_admin = self.manager.current_role == UserRole.ADMIN
         self.user_spinner.disabled = not is_admin
         self.user_spinner.opacity = 1 if is_admin else 0
-        self.user_spinner.height = 40 if is_admin else 0
+        self.user_spinner.height = dp(40) if is_admin else 0
+
         self.manage_users_btn.disabled = not is_admin
         self.manage_users_btn.opacity = 1 if is_admin else 0
-        self.manage_users_btn.height = 40 if is_admin else 0
+        self.manage_users_btn.height = dp(40) if is_admin else 0
+
+        self.review_requests_btn.disabled = is_admin
+        self.review_requests_btn.opacity = 0 if is_admin else 1
+        self.review_requests_btn.height = 0 if is_admin else dp(40)
 
         if is_admin:
             self.mode_label.text = "Создать заявку (режим администратора)"
-            self.review_requests_btn.disabled = True
-            self.review_requests_btn.opacity = 0
-            self.review_requests_btn.height = 0
             if self.users_map and self.user_spinner.text not in self.users_map:
                 self.user_spinner.text = "Выберите пользователя"
         else:
             self.mode_label.text = "Создать заявку (режим рабочего)"
-            self.review_requests_btn.disabled = False
-            self.review_requests_btn.opacity = 1
-            self.review_requests_btn.height = 40
             if self.current_user:
                 self.user_spinner.text = self.current_user.full_name
 
     # ================= LOAD DATA =================
-
     def _set_users(self, users: List[Users]):
         self.users_map = {u.full_name: u.id for u in users}
         self.user_spinner.values = list(self.users_map.keys())
 
     def _set_requests(self, requests):
         self.requests_container.clear_widgets()
-
         if not requests:
-            self.requests_container.add_widget(
-                Label(text="Нет заявок", size_hint_y=None, height=35, color=(0, 0, 0, 1))
-            )
+            self.requests_container.add_widget(Label(text="Нет заявок", size_hint_y=None, height=dp(35), font_size=sp(16), color=(0, 0, 0, 1)))
             return
-
         for r in requests:
             self.requests_container.add_widget(self._build_request_card(r))
 
     def _build_request_card(self, request):
-        card = BoxLayout(
-            orientation="vertical",
-            size_hint=(1, None),
-            height=95,
-            padding=8,
-            spacing=4,
-        )
-
+        card = BoxLayout(orientation="vertical", size_hint=(1, None), height=dp(95), padding=dp(8), spacing=dp(4))
         with card.canvas.before:
             Color(0.92, 0.92, 0.92, 1)
             card.bg_rect = Rectangle(pos=card.pos, size=card.size)
@@ -210,14 +154,12 @@ class OrdersDashboardScreen(LightScreen):
             instance.border.rectangle = (instance.x, instance.y, instance.width, instance.height)
 
         card.bind(pos=update_graphics, size=update_graphics)
-
-        card.add_widget(Label(text=f"[{request.id}] {request.equipment_name}", size_hint_y=None, height=28, color=(0, 0, 0, 1)))
-        card.add_widget(Label(text=f"Статус: {STATUS_RU.get(request.status, request.status.value)}", size_hint_y=None, height=26, color=(0, 0, 0, 1)))
-        card.add_widget(Label(text=f"Проблема: {request.description_problem}", size_hint_y=None, height=26, color=(0, 0, 0, 1)))
+        card.add_widget(Label(text=f"[{request.id}] {request.equipment_name}", size_hint_y=None, height=dp(28), font_size=sp(16), color=(0, 0, 0, 1)))
+        card.add_widget(Label(text=f"Статус: {STATUS_RU.get(request.status, request.status.value)}", size_hint_y=None, height=dp(26), font_size=sp(14), color=(0, 0, 0, 1)))
+        card.add_widget(Label(text=f"Проблема: {request.description_problem}", size_hint_y=None, height=dp(26), font_size=sp(14), color=(0, 0, 0, 1)))
         return card
 
     # ================= CREATE REQUEST =================
-
     def create_request(self, *_):
         self.run_async(self._create_request_async(), self._after_create, self._error)
 
@@ -230,10 +172,8 @@ class OrdersDashboardScreen(LightScreen):
             created_by = self.manager.current_user_id
 
         repo = get_repair_request_repository()
-
         if not self.equipment_input.text.strip():
             raise Exception("Заполните имя инструмента")
-
         if not self.problem_input.text.strip():
             raise Exception("Заполните проблему")
 
@@ -252,7 +192,6 @@ class OrdersDashboardScreen(LightScreen):
         show_modal(str(error))
 
     # ================= USERS =================
-
     def open_user_management(self, *_):
         self.manager.safe_switch("admin_user_management")
 
@@ -265,7 +204,6 @@ class OrdersDashboardScreen(LightScreen):
         self.manager.safe_switch("requests_review")
 
     # ================= LOGOUT =================
-
     def logout(self, *_):
         sm = self.manager
         sm.current_user_id = None
